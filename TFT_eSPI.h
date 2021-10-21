@@ -69,14 +69,6 @@
 
 #include "Processors/TFT_eSPI_ESP32.h"
 
-#elif defined (ESP8266)
-#include "Processors/TFT_eSPI_ESP8266.h"
-#elif defined (STM32)
-#include "Processors/TFT_eSPI_STM32.h"
-#elif defined(ARDUINO_ARCH_RP2040)
-#include "Processors/TFT_eSPI_RP2040.h"
-#else
-#include "Processors/TFT_eSPI_Generic.h"
 #endif
 
 /***************************************************************************************
@@ -470,9 +462,6 @@ public:
     // Write a set of pixels stored in memory, use setSwapBytes(true/false) function to correct endianess
     void pushPixels(const void *data_in, uint32_t len);
 
-    // Read the colour of a pixel at x,y and return value in 565 format
-    uint16_t readPixel(int32_t x, int32_t y);
-
     // Support for half duplex (bi-directional SDA) SPI bus where MOSI must be switched to input
 #ifdef TFT_SDA_READ
 #if defined (TFT_eSPI_ENABLE_8_BIT_READ)
@@ -619,10 +608,6 @@ public:
 
     void commandList(const uint8_t *addr); // Send a initialisation sequence to TFT stored in FLASH
 
-    uint8_t readcommand8(uint8_t cmd_function, uint8_t index = 0); // read 8 bits from TFT
-    uint16_t readcommand16(uint8_t cmd_function, uint8_t index = 0); // read 16 bits from TFT
-    uint32_t readcommand32(uint8_t cmd_function, uint8_t index = 0); // read 32 bits from TFT
-
 
     // Colour conversion
     // Convert 8 bit red, green and blue to 16 bits
@@ -716,12 +701,6 @@ public:
 
     void setAttribute(uint8_t id = 0, uint8_t a = 0); // Set attribute value
     uint8_t getAttribute(uint8_t id = 0);                // Get attribute value
-
-    // Used for diagnostic sketch to see library setup adopted by compiler, see Section 7 above
-    void getSetup(setup_t &tft_settings); // Sketch provides the instance to populate
-
-    // Global variables
-    static SPIClass *getSPIinstance(void); // Get SPI class handle
 
     uint32_t textcolor, textbgcolor;         // Text foreground and background colours
 

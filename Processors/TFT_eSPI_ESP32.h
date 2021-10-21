@@ -141,47 +141,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // Define the CS (TFT chip select) pin drive code
 ////////////////////////////////////////////////////////////////////////////////////////
-#ifndef TFT_CS
-  #define TFT_CS -1  // Keep DMA code happy
-  #define CS_L       // No macro allocated so it generates no code
-  #define CS_H       // No macro allocated so it generates no code
-#else
-  #if defined (TFT_PARALLEL_8_BIT)
-    #if TFT_CS >= 32
-        #define CS_L GPIO.out1_w1tc.val = (1 << (TFT_CS - 32))
-        #define CS_H GPIO.out1_w1ts.val = (1 << (TFT_CS - 32))
-    #elif TFT_CS >= 0
-        #define CS_L GPIO.out_w1tc = (1 << TFT_CS)
-        #define CS_H GPIO.out_w1ts = (1 << TFT_CS)
-    #else
-      #define CS_L
-      #define CS_H
-    #endif
-  #else
-    #if (TFT_CS >= 32)
-      #ifdef RPI_DISPLAY_TYPE  // RPi display needs a slower CS change
-        #define CS_L GPIO.out1_w1ts.val = (1 << (TFT_CS - 32)); \
-                     GPIO.out1_w1tc.val = (1 << (TFT_CS - 32))
-        #define CS_H GPIO.out1_w1tc.val = (1 << (TFT_CS - 32)); \
-                     GPIO.out1_w1ts.val = (1 << (TFT_CS - 32))
-      #else
-        #define CS_L GPIO.out1_w1tc.val = (1 << (TFT_CS - 32)); GPIO.out1_w1tc.val = (1 << (TFT_CS - 32))
-        #define CS_H GPIO.out1_w1ts.val = (1 << (TFT_CS - 32))//;GPIO.out1_w1ts.val = (1 << (TFT_CS - 32))
-      #endif
-    #elif (TFT_CS >= 0)
-      #ifdef RPI_DISPLAY_TYPE  // RPi display needs a slower CS change
-        #define CS_L GPIO.out_w1ts = (1 << TFT_CS); GPIO.out_w1tc = (1 << TFT_CS)
-        #define CS_H GPIO.out_w1tc = (1 << TFT_CS); GPIO.out_w1ts = (1 << TFT_CS)
-      #else
-        #define CS_L GPIO.out_w1tc = (1 << TFT_CS); GPIO.out_w1tc = (1 << TFT_CS)
-        #define CS_H GPIO.out_w1ts = (1 << TFT_CS)//;GPIO.out_w1ts = (1 << TFT_CS)
-      #endif
-    #else
-      #define CS_L
-      #define CS_H
-    #endif
-  #endif
-#endif
+#define CS_L GPIO.out_w1tc = (1 << TFT_CS); GPIO.out_w1tc = (1 << TFT_CS)
+#define CS_H GPIO.out_w1ts = (1 << TFT_CS)//;GPIO.out_w1ts = (1 << TFT_CS)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Define the WR (TFT Write) pin drive code

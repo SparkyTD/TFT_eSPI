@@ -48,18 +48,12 @@
 ** Description:             Start SPI transaction for writes and select TFT
 ***************************************************************************************/
 inline void TFT_eSPI::begin_tft_write(void) {
-#if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (locked) {
         locked = false; // Flag to show SPI access now unlocked
         spi->beginTransaction(SPISettings(SPI_FREQUENCY, MSBFIRST, TFT_SPI_MODE)); // RP2040 SDK -> 68us delay!
         CS_L;
         SET_BUS_WRITE_MODE;  // Some processors (e.g. ESP32) allow recycling the tx buffer when rx is not used
     }
-#else
-                                                                                                                            CS_L;
-  SET_BUS_WRITE_MODE;
-#endif
-
 }
 
 /***************************************************************************************
@@ -67,7 +61,6 @@ inline void TFT_eSPI::begin_tft_write(void) {
 ** Description:             End transaction for write and deselect TFT
 ***************************************************************************************/
 inline void TFT_eSPI::end_tft_write(void) {
-#if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (!inTransaction) {      // Flag to stop ending tranaction during multiple graphics calls
         if (!locked) {          // Locked when beginTransaction has been called
             locked = true;        // Flag to show SPI access now locked
@@ -77,9 +70,6 @@ inline void TFT_eSPI::end_tft_write(void) {
         }
         SET_BUS_READ_MODE;      // In case SPI has been configured for tx only
     }
-#else
-    if(!inTransaction) {SPI_BUSY_CHECK; CS_H; SET_BUS_READ_MODE;}
-#endif
 }
 
 /***************************************************************************************
@@ -88,19 +78,11 @@ inline void TFT_eSPI::end_tft_write(void) {
 ***************************************************************************************/
 // Reads require a lower SPI clock rate than writes
 inline void TFT_eSPI::begin_tft_read(void) {
-    DMA_BUSY_CHECK; // Wait for any DMA transfer to complete before changing SPI settings
-#if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (locked) {
         locked = false;
         spi->beginTransaction(SPISettings(SPI_READ_FREQUENCY, MSBFIRST, TFT_SPI_MODE));
         CS_L;
     }
-#else
-                                                                                                                                #if !defined(TFT_PARALLEL_8_BIT)
-    spi.setFrequency(SPI_READ_FREQUENCY);
-  #endif
-   CS_L;
-#endif
     SET_BUS_READ_MODE;
 }
 
@@ -323,7 +305,6 @@ void TFT_eSPI::frameViewport(uint16_t color, int32_t w) {
 ** Description:             End transaction for reads and deselect TFT
 ***************************************************************************************/
 inline void TFT_eSPI::end_tft_read(void) {
-#if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (!inTransaction) {
         if (!locked) {
             locked = true;
@@ -331,18 +312,7 @@ inline void TFT_eSPI::end_tft_read(void) {
             spi->endTransaction();
         }
     }
-#else
-                                                                                                                                #if !defined(TFT_PARALLEL_8_BIT)
-    spi.setFrequency(SPI_FREQUENCY);
-  #endif
-   if(!inTransaction) {CS_H;}
-#endif
     SET_BUS_WRITE_MODE;
-
-// The ST7796 appears to need a 4ms delay after a CGRAM read, otherwise subsequent writes will fail!
-#ifdef ST7796_DRIVER
-    delay(4);
-#endif
 }
 
 /***************************************************************************************
@@ -371,17 +341,6 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h) {
     digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
 #endif
 
-// Configure chip select for touchscreen controller if present
-#ifdef TOUCH_CS
-                                                                                                                            pinMode(TOUCH_CS, OUTPUT);
-  digitalWrite(TOUCH_CS, HIGH); // Chip select high (inactive)
-#endif
-
-#ifdef TFT_WR
-                                                                                                                            pinMode(TFT_WR, OUTPUT);
-  digitalWrite(TFT_WR, HIGH); // Set write strobe high (inactive)
-#endif
-
 #ifdef TFT_DC
     pinMode(TFT_DC, OUTPUT);
     digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
@@ -392,26 +351,6 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h) {
         pinMode(TFT_RST, OUTPUT);
         digitalWrite(TFT_RST, HIGH); // Set high, do not share pin with another SPI device
     }
-#endif
-
-#if defined (TFT_PARALLEL_8_BIT)
-
-                                                                                                                            // Make sure read is high before we set the bus to output
-  pinMode(TFT_RD, OUTPUT);
-  digitalWrite(TFT_RD, HIGH);
-
-  // Set TFT data bus lines to output
-  pinMode(TFT_D0, OUTPUT); digitalWrite(TFT_D0, HIGH);
-  pinMode(TFT_D1, OUTPUT); digitalWrite(TFT_D1, HIGH);
-  pinMode(TFT_D2, OUTPUT); digitalWrite(TFT_D2, HIGH);
-  pinMode(TFT_D3, OUTPUT); digitalWrite(TFT_D3, HIGH);
-  pinMode(TFT_D4, OUTPUT); digitalWrite(TFT_D4, HIGH);
-  pinMode(TFT_D5, OUTPUT); digitalWrite(TFT_D5, HIGH);
-  pinMode(TFT_D6, OUTPUT); digitalWrite(TFT_D6, HIGH);
-  pinMode(TFT_D7, OUTPUT); digitalWrite(TFT_D7, HIGH);
-
-  CONSTRUCTOR_INIT_TFT_DATA_BUS;
-
 #endif
 
     _init_width = _width = w; // Set by specific xxxxx_Defines.h file or by users sketch
@@ -442,10 +381,6 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h) {
     _booted = true;     // Default attributes
     _cp437 = true;     // Legacy GLCD font bug fix
     _utf8 = true;     // UTF8 decoding enabled
-
-#ifdef FONT_FS_AVAILABLE
-    fs_font = true;     // Smooth font filing system or array (fs_font = false) flag
-#endif
 
 #if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
     if (psramFound()) _psram_enable = true; // Enable the use of PSRAM (if available)
@@ -516,12 +451,6 @@ void TFT_eSPI::begin(uint8_t tc) {
 void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
     spi = _spi;
     if (_booted) {
-#if defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040)
-#if !defined(TFT_PARALLEL_8_BIT)
-        Serial.println("BEGIN SPI CLK=" + String(TFT_SCLK) + "; MISO=" + String(TFT_MISO) + "; MOSI=" + String(TFT_MOSI));
-        spi->begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1);
-#endif
-#endif
         lockTransaction = false;
         inTransaction = false;
         locked = true;
@@ -534,29 +463,21 @@ void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
         digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
 
 
-
         // Set to output once again in case ESP8266 D6 (MISO) is used for DC
-#ifdef TFT_DC
         pinMode(TFT_DC, OUTPUT);
         digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
-#endif
 
         _booted = false;
         end_tft_write();
     } // end of: if just _booted
 
+
     // Toggle RST low to reset
-#ifdef TFT_RST
-    if (TFT_RST >= 0) {
-        digitalWrite(TFT_RST, HIGH);
-        delay(5);
-        digitalWrite(TFT_RST, LOW);
-        delay(20);
-        digitalWrite(TFT_RST, HIGH);
-    } else writecommand(TFT_SWRST); // Software reset
-#else
-    writecommand(TFT_SWRST); // Software reset
-#endif
+    digitalWrite(TFT_RST, HIGH);
+    delay(5);
+    digitalWrite(TFT_RST, LOW);
+    delay(20);
+    digitalWrite(TFT_RST, HIGH);
 
     delay(150); // Wait for reset to complete
 
@@ -569,28 +490,9 @@ void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
 
 #include "TFT_Drivers/ST7735_Init.h"
 
-#ifdef TFT_INVERSION_ON
-    writecommand(TFT_INVON);
-#endif
-
-#ifdef TFT_INVERSION_OFF
-    writecommand(TFT_INVOFF);
-#endif
-
     end_tft_write();
 
     setRotation(rotation);
-
-#if defined (TFT_BL) && defined (TFT_BACKLIGHT_ON)
-                                                                                                                            pinMode(TFT_BL, OUTPUT);
-  digitalWrite(TFT_BL, TFT_BACKLIGHT_ON);
-#else
-#if defined (TFT_BL) && defined (M5STACK)
-                                                                                                                            // Turn on the back-light LED
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);
-#endif
-#endif
 }
 
 
@@ -693,154 +595,6 @@ void TFT_eSPI::writedata(uint8_t d) {
     CS_L;        // Allow more hold time for low VDI rail
 
     end_tft_write();
-}
-
-
-/***************************************************************************************
-** Function name:           readcommand8
-** Description:             Read a 8 bit data value from an indexed command register
-***************************************************************************************/
-uint8_t TFT_eSPI::readcommand8(uint8_t cmd_function, uint8_t index) {
-    uint8_t reg = 0;
-#ifdef TFT_PARALLEL_8_BIT
-
-                                                                                                                            writecommand(cmd_function); // Sets DC and CS high
-
-  busDir(dir_mask, INPUT);
-
-  CS_L;
-
-  // Read nth parameter (assumes caller discards 1st parameter or points index to 2nd)
-  while(index--) reg = readByte();
-
-  busDir(dir_mask, OUTPUT);
-
-  CS_H;
-
-#else // SPI interface
-    // Tested with ILI9341 set to Interface II i.e. IM [3:0] = "1101"
-    begin_tft_read();
-    index = 0x10 + (index & 0x0F);
-
-    DC_C;
-    tft_Write_8(0xD9);
-    DC_D;
-    tft_Write_8(index);
-
-    CS_H; // Some displays seem to need CS to be pulsed here, or is just a delay needed?
-    CS_L;
-
-    DC_C;
-    tft_Write_8(cmd_function);
-    DC_D;
-    reg = tft_Read_8();
-
-    end_tft_read();
-#endif
-    return reg;
-}
-
-
-/***************************************************************************************
-** Function name:           readcommand16
-** Description:             Read a 16 bit data value from an indexed command register
-***************************************************************************************/
-uint16_t TFT_eSPI::readcommand16(uint8_t cmd_function, uint8_t index) {
-    uint32_t reg;
-
-    reg = (readcommand8(cmd_function, index + 0) << 8);
-    reg |= (readcommand8(cmd_function, index + 1) << 0);
-
-    return reg;
-}
-
-
-/***************************************************************************************
-** Function name:           readcommand32
-** Description:             Read a 32 bit data value from an indexed command register
-***************************************************************************************/
-uint32_t TFT_eSPI::readcommand32(uint8_t cmd_function, uint8_t index) {
-    uint32_t reg;
-
-    reg = ((uint32_t) readcommand8(cmd_function, index + 0) << 24);
-    reg |= ((uint32_t) readcommand8(cmd_function, index + 1) << 16);
-    reg |= ((uint32_t) readcommand8(cmd_function, index + 2) << 8);
-    reg |= ((uint32_t) readcommand8(cmd_function, index + 3) << 0);
-
-    return reg;
-}
-
-
-/***************************************************************************************
-** Function name:           read pixel (for SPI Interface II i.e. IM [3:0] = "1101")
-** Description:             Read 565 pixel colours from a pixel
-***************************************************************************************/
-uint16_t TFT_eSPI::readPixel(int32_t x0, int32_t y0) {
-    if (_vpOoB) return 0;
-
-    x0 += _xDatum;
-    y0 += _yDatum;
-
-    // Range checking
-    if ((x0 < _vpX) || (y0 < _vpY) || (x0 >= _vpW) || (y0 >= _vpH)) return 0;
-
-#if !defined(TFT_PARALLEL_8_BIT)
-
-    // This function can get called during antialiased font rendering
-    // so a transaction may be in progress
-    bool wasInTransaction = inTransaction;
-    if (inTransaction) {
-        inTransaction = false;
-        end_tft_write();
-    }
-
-    uint16_t color = 0;
-
-    begin_tft_read();
-
-    readAddrWindow(x0, y0, 1, 1); // Sets CS low
-
-    // Dummy read to throw away don't care value
-    tft_Read_8();
-
-    //#if !defined (ILI9488_DRIVER)
-
-    // Read the 3 RGB bytes, colour is actually only in the top 6 bits of each byte
-    // as the TFT stores colours as 18 bits
-    uint8_t r = tft_Read_8();
-    uint8_t g = tft_Read_8();
-    uint8_t b = tft_Read_8();
-    color = color565(r, g, b);
-
-/*
-  #else
-
-    // The 6 colour bits are in MS 6 bits of each byte, but the ILI9488 needs an extra clock pulse
-    // so bits appear shifted right 1 bit, so mask the middle 6 bits then shift 1 place left
-    uint8_t r = (tft_Read_8()&0x7E)<<1;
-    uint8_t g = (tft_Read_8()&0x7E)<<1;
-    uint8_t b = (tft_Read_8()&0x7E)<<1;
-    color = color565(r, g, b);
-
-  #endif
-*/
-    CS_H;
-
-#ifdef TFT_SDA_READ
-    end_SDA_Read();
-#endif
-
-    end_tft_read();
-
-    // Reinstate the transaction if one was in progress
-    if (wasInTransaction) {
-        begin_tft_write();
-        inTransaction = true;
-    }
-
-    return color;
-
-#endif
 }
 
 void TFT_eSPI::setCallback(getColorCallback getCol) {
@@ -4024,204 +3778,8 @@ void TFT_eSPI::setTextFont(uint8_t f) {
     textfont = (f > 0) ? f : 1; // Don't allow font 0
     gfxFont = NULL;
 }
-
-#else
-
-
-                                                                                                                        /***************************************************************************************
-** Function name:           setFreeFont
-** Descriptions:            Sets the GFX free font to use
-***************************************************************************************/
-
-// Alternative to setTextFont() so we don't need two different named functions
-void TFT_eSPI::setFreeFont(uint8_t font)
-{
-  setTextFont(font);
-}
-
-
-/***************************************************************************************
-** Function name:           setTextFont
-** Description:             Set the font for the print stream
-***************************************************************************************/
-void TFT_eSPI::setTextFont(uint8_t f)
-{
-  textfont = (f > 0) ? f : 1; // Don't allow font 0
-}
 #endif
 
-
-/***************************************************************************************
-** Function name:           getSPIinstance
-** Description:             Get the instance of the SPI class
-***************************************************************************************/
-#if !defined (TFT_PARALLEL_8_BIT)
-
-SPIClass *TFT_eSPI::getSPIinstance(void) {
-    return spi;
-}
-
-#endif
-
-/***************************************************************************************
-** Function name:           getSetup
-** Description:             Get the setup details for diagnostic and sketch access
-***************************************************************************************/
-void TFT_eSPI::getSetup(setup_t &tft_settings) {
-// tft_settings.version is set in header file
-
-#if defined (PROCESSOR_ID)
-    tft_settings.esp = PROCESSOR_ID;
-#else
-    tft_settings.esp = -1;
-#endif
-
-#if defined (SUPPORT_TRANSACTIONS)
-    tft_settings.trans = true;
-#else
-    tft_settings.trans = false;
-#endif
-
-#if defined (TFT_PARALLEL_8_BIT)
-                                                                                                                            tft_settings.serial = false;
-  tft_settings.tft_spi_freq = 0;
-#else
-    tft_settings.serial = true;
-    tft_settings.tft_spi_freq = SPI_FREQUENCY / 100000;
-#ifdef SPI_READ_FREQUENCY
-    tft_settings.tft_rd_freq = SPI_READ_FREQUENCY / 100000;
-#endif
-#endif
-
-#if defined(TFT_SPI_OVERLAP)
-    tft_settings.overlap = true;
-#else
-    tft_settings.overlap = false;
-#endif
-
-    tft_settings.tft_driver = TFT_DRIVER;
-    tft_settings.tft_width = _init_width;
-    tft_settings.tft_height = _init_height;
-
-#ifdef CGRAM_OFFSET
-    tft_settings.r0_x_offset = colstart;
-    tft_settings.r0_y_offset = rowstart;
-    tft_settings.r1_x_offset = 0;
-    tft_settings.r1_y_offset = 0;
-    tft_settings.r2_x_offset = 0;
-    tft_settings.r2_y_offset = 0;
-    tft_settings.r3_x_offset = 0;
-    tft_settings.r3_y_offset = 0;
-#else
-                                                                                                                            tft_settings.r0_x_offset = 0;
-  tft_settings.r0_y_offset = 0;
-  tft_settings.r1_x_offset = 0;
-  tft_settings.r1_y_offset = 0;
-  tft_settings.r2_x_offset = 0;
-  tft_settings.r2_y_offset = 0;
-  tft_settings.r3_x_offset = 0;
-  tft_settings.r3_y_offset = 0;
-#endif
-
-#if defined (TFT_MOSI)
-    tft_settings.pin_tft_mosi = TFT_MOSI;
-#else
-    tft_settings.pin_tft_mosi = -1;
-#endif
-
-#if defined (TFT_MISO)
-    tft_settings.pin_tft_miso = TFT_MISO;
-#else
-    tft_settings.pin_tft_miso = -1;
-#endif
-
-#if defined (TFT_SCLK)
-    tft_settings.pin_tft_clk = TFT_SCLK;
-#else
-    tft_settings.pin_tft_clk  = -1;
-#endif
-
-#if defined (TFT_CS)
-    tft_settings.pin_tft_cs = TFT_CS;
-#else
-    tft_settings.pin_tft_cs   = -1;
-#endif
-
-#if defined (TFT_DC)
-    tft_settings.pin_tft_dc = TFT_DC;
-#else
-    tft_settings.pin_tft_dc  = -1;
-#endif
-
-#if defined (TFT_RD)
-    tft_settings.pin_tft_rd  = TFT_RD;
-#else
-    tft_settings.pin_tft_rd = -1;
-#endif
-
-#if defined (TFT_WR)
-    tft_settings.pin_tft_wr  = TFT_WR;
-#else
-    tft_settings.pin_tft_wr = -1;
-#endif
-
-#if defined (TFT_RST)
-    tft_settings.pin_tft_rst = TFT_RST;
-#else
-    tft_settings.pin_tft_rst = -1;
-#endif
-
-#if defined (TFT_PARALLEL_8_BIT)
-                                                                                                                            tft_settings.pin_tft_d0 = TFT_D0;
-  tft_settings.pin_tft_d1 = TFT_D1;
-  tft_settings.pin_tft_d2 = TFT_D2;
-  tft_settings.pin_tft_d3 = TFT_D3;
-  tft_settings.pin_tft_d4 = TFT_D4;
-  tft_settings.pin_tft_d5 = TFT_D5;
-  tft_settings.pin_tft_d6 = TFT_D6;
-  tft_settings.pin_tft_d7 = TFT_D7;
-#else
-    tft_settings.pin_tft_d0 = -1;
-    tft_settings.pin_tft_d1 = -1;
-    tft_settings.pin_tft_d2 = -1;
-    tft_settings.pin_tft_d3 = -1;
-    tft_settings.pin_tft_d4 = -1;
-    tft_settings.pin_tft_d5 = -1;
-    tft_settings.pin_tft_d6 = -1;
-    tft_settings.pin_tft_d7 = -1;
-#endif
-
-#if defined (TFT_BL)
-    tft_settings.pin_tft_led = TFT_BL;
-#endif
-
-#if defined (TFT_BACKLIGHT_ON)
-    tft_settings.pin_tft_led_on = TFT_BACKLIGHT_ON;
-#endif
-
-#if defined (TOUCH_CS)
-                                                                                                                            tft_settings.pin_tch_cs   = TOUCH_CS;
-  tft_settings.tch_spi_freq = SPI_TOUCH_FREQUENCY/100000;
-#else
-    tft_settings.pin_tch_cs = -1;
-    tft_settings.tch_spi_freq = 0;
-#endif
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////
-#ifdef TOUCH_CS
-                                                                                                                        #include "Extensions/Touch.cpp"
-  #include "Extensions/Button.cpp"
-#endif
 
 #include "Extensions/Sprite.cpp"
-
-#ifdef SMOOTH_FONT
-
-#include "Extensions/Smooth_font.cpp"
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////
 
