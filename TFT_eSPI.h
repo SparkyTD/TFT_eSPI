@@ -18,8 +18,11 @@
 
 #define TFT_ESPI_VERSION "2.3.70"
 
+#ifdef ESP32_S2
 #define VSPI HSPI
 #define VSPI_HOST SPI_HOST
+#endif
+
 // Bit level feature flags
 // Bit 0 set: viewport capability
 #define TFT_ESPI_FEATURES 1
