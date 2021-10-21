@@ -17,6 +17,7 @@
 #include "TFT_eSPI.h"
 
 #include "Processors/TFT_eSPI_ESP32.c"
+#include "TFT_Drivers/ST7735_Init.h"
 
 #ifndef SPI_BUSY_CHECK
 #define SPI_BUSY_CHECK
@@ -331,30 +332,27 @@ void TFT_eSPI::spi_end_read() { end_tft_read(); }
 ** Function name:           TFT_eSPI
 ** Description:             Constructor , we must use hardware SPI pins
 ***************************************************************************************/
-TFT_eSPI::TFT_eSPI(int16_t w, int16_t h) {
+TFT_eSPI::TFT_eSPI(SPIClass *_spi, uint8_t _cs, uint8_t _dc, uint8_t _reset) {
+
+    spi = _spi;
+    pin_cs = _cs;
+    pin_dc = _dc;
+    pin_reset = _reset;
 
 // The control pins are deliberately set to the inactive state (CS high) as setup()
 // might call and initialise other SPI peripherals which would could cause conflicts
 // if CS is floating or undefined.
-#ifdef TFT_CS
-    pinMode(TFT_CS, OUTPUT);
-    digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
-#endif
+    pinMode(pin_cs, OUTPUT);
+    digitalWrite(pin_cs, HIGH); // Chip select high (inactive)
 
-#ifdef TFT_DC
-    pinMode(TFT_DC, OUTPUT);
-    digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
-#endif
+    pinMode(pin_dc, OUTPUT);
+    digitalWrite(pin_dc, HIGH); // Data/Command high = data mode
 
-#ifdef TFT_RST
-    if (TFT_RST >= 0) {
-        pinMode(TFT_RST, OUTPUT);
-        digitalWrite(TFT_RST, HIGH); // Set high, do not share pin with another SPI device
-    }
-#endif
+    pinMode(pin_reset, OUTPUT);
+    digitalWrite(pin_reset, HIGH); // Set high, do not share pin with another SPI device
 
-    _init_width = _width = w; // Set by specific xxxxx_Defines.h file or by users sketch
-    _init_height = _height = h; // Set by specific xxxxx_Defines.h file or by users sketch
+    _init_width = _width = TFT_WIDTH; // Set by specific xxxxx_Defines.h file or by users sketch
+    _init_height = _height = TFT_HEIGHT; // Set by specific xxxxx_Defines.h file or by users sketch
 
     // Reset the viewport to the whole screen
     resetViewport();
@@ -436,20 +434,11 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h) {
 
 
 /***************************************************************************************
-** Function name:           begin
-** Description:             Included for backwards compatibility
-***************************************************************************************/
-void TFT_eSPI::begin(uint8_t tc) {
-    init(tc);
-}
-
-
-/***************************************************************************************
 ** Function name:           init (tc is tab colour for ST7735 displays only)
 ** Description:             Reset, then initialise the TFT display registers
 ***************************************************************************************/
-void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
-    spi = _spi;
+void TFT_eSPI::init() {
+
     if (_booted) {
         lockTransaction = false;
         inTransaction = false;
@@ -459,13 +448,13 @@ void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
 
 
         // Set to output once again in case ESP8266 D6 (MISO) is used for CS
-        pinMode(TFT_CS, OUTPUT);
-        digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
+        pinMode(pin_cs, OUTPUT);
+        digitalWrite(pin_cs, HIGH); // Chip select high (inactive)
 
 
         // Set to output once again in case ESP8266 D6 (MISO) is used for DC
-        pinMode(TFT_DC, OUTPUT);
-        digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
+        pinMode(pin_dc, OUTPUT);
+        digitalWrite(pin_dc, HIGH); // Data/Command high = data mode
 
         _booted = false;
         end_tft_write();
@@ -473,22 +462,17 @@ void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
 
 
     // Toggle RST low to reset
-    digitalWrite(TFT_RST, HIGH);
+    digitalWrite(pin_reset, HIGH);
     delay(5);
-    digitalWrite(TFT_RST, LOW);
+    digitalWrite(pin_reset, LOW);
     delay(20);
-    digitalWrite(TFT_RST, HIGH);
+    digitalWrite(pin_reset, HIGH);
 
     delay(150); // Wait for reset to complete
 
     begin_tft_write();
 
-    tc = tc; // Supress warning
-
-    // This loads the driver specific initialisation code  <<<<<<<<<<<<<<<<<<<<< ADD NEW DRIVERS TO THE LIST HERE <<<<<<<<<<<<<<<<<<<<<<<
-    tabcolor = tc;
-
-#include "TFT_Drivers/ST7735_Init.h"
+    commandList(InitCommands);
 
     end_tft_write();
 
@@ -3778,6 +3762,8 @@ void TFT_eSPI::setTextFont(uint8_t f) {
     textfont = (f > 0) ? f : 1; // Don't allow font 0
     gfxFont = NULL;
 }
+
+
 #endif
 
 

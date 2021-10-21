@@ -402,11 +402,11 @@ class TFT_eSPI : public Print {
     //--------------------------------------- public ------------------------------------//
 public:
 
-    TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
+    TFT_eSPI(SPIClass *_spi = nullptr, uint8_t _cs = -1, uint8_t _dc = -1, uint8_t _reset = -1);
 
     // init() and begin() are equivalent, begin() included for backwards compatibility
     // Sketch defined tab colour option is for ST7735 displays only
-    void init(uint8_t tc = TAB_COLOUR, SPIClass *_spi = nullptr), begin(uint8_t tc = TAB_COLOUR);
+    void init();
 
     // These are virtual so the TFT_eSprite class can override them with sprite specific functions
     virtual void drawPixel(int32_t x, int32_t y, uint32_t color),

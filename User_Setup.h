@@ -20,22 +20,6 @@
 #define TFT_HEIGHT 160
 
 
-
-#define TFT_CS 5
-#define TFT_DC 15
-#define TFT_RST 16
-
-#define TFT_MOSI 9 // 38
-#define TFT_SCLK 8 // 39
-#define TFT_MISO 7 // 40
-
-
-
-
-// #define TFT_MOSI 11
-// #define TFT_SCLK 12
-// #define TFT_MISO 13
-
 #define LOAD_GLCD   // Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
 //#define LOAD_FONT2  // Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters
 //#define LOAD_FONT4  // Font 4. Medium 26 pixel high font, needs ~5848 bytes in FLASH, 96 characters
