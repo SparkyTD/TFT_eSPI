@@ -296,6 +296,8 @@ const PROGMEM fontinfo fontdata[] = {
 #define TFT_SKYBLUE     TFT_RGB_COLOR(135, 206, 235)
 #define TFT_VIOLET      TFT_RGB_COLOR(180,  46, 226)
 
+#define RFR_RANDOM_COLOR TFT_RGB_COLOR(random(255), random(255), random(255))
+
 // Next is a special 16 bit colour value that encodes to 8 bits
 // and will then decode back to the same 16 bit value.
 // Convenient for 8 bit and 16 bit transparent sprites.
@@ -412,7 +414,7 @@ public:
 
     // init() and begin() are equivalent, begin() included for backwards compatibility
     // Sketch defined tab colour option is for ST7735 displays only
-    void init(uint8_t tc = TAB_COLOUR), begin(uint8_t tc = TAB_COLOUR);
+    void init(uint8_t tc = TAB_COLOUR, SPIClass *_spi = nullptr), begin(uint8_t tc = TAB_COLOUR);
 
     // These are virtual so the TFT_eSprite class can override them with sprite specific functions
     virtual void drawPixel(int32_t x, int32_t y, uint32_t color),
@@ -719,7 +721,7 @@ public:
     void getSetup(setup_t &tft_settings); // Sketch provides the instance to populate
 
     // Global variables
-    static SPIClass &getSPIinstance(void); // Get SPI class handle
+    static SPIClass *getSPIinstance(void); // Get SPI class handle
 
     uint32_t textcolor, textbgcolor;         // Text foreground and background colours
 

@@ -509,7 +509,7 @@
 #if !defined (TFT_PARALLEL_8_BIT)
   // Read from display using SPI or software SPI
   // Use a SPI read transfer
-  #define tft_Read_8() spi.transfer(0)
+  #define tft_Read_8() spi->transfer(0)
 #endif
 
 // Concatenate a byte sequence A,B,C,D to CDAB, P is a uint8_t pointer

@@ -51,7 +51,7 @@ inline void TFT_eSPI::begin_tft_write(void) {
 #if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (locked) {
         locked = false; // Flag to show SPI access now unlocked
-        spi.beginTransaction(SPISettings(SPI_FREQUENCY, MSBFIRST, TFT_SPI_MODE)); // RP2040 SDK -> 68us delay!
+        spi->beginTransaction(SPISettings(SPI_FREQUENCY, MSBFIRST, TFT_SPI_MODE)); // RP2040 SDK -> 68us delay!
         CS_L;
         SET_BUS_WRITE_MODE;  // Some processors (e.g. ESP32) allow recycling the tx buffer when rx is not used
     }
@@ -73,7 +73,7 @@ inline void TFT_eSPI::end_tft_write(void) {
             locked = true;        // Flag to show SPI access now locked
             SPI_BUSY_CHECK;       // Check send complete and clean out unused rx data
             CS_H;
-            spi.endTransaction(); //  RP2040 SDK -> 0.7us delay
+            spi->endTransaction(); //  RP2040 SDK -> 0.7us delay
         }
         SET_BUS_READ_MODE;      // In case SPI has been configured for tx only
     }
@@ -92,7 +92,7 @@ inline void TFT_eSPI::begin_tft_read(void) {
 #if defined (SPI_HAS_TRANSACTION) && defined (SUPPORT_TRANSACTIONS) && !defined(TFT_PARALLEL_8_BIT)
     if (locked) {
         locked = false;
-        spi.beginTransaction(SPISettings(SPI_READ_FREQUENCY, MSBFIRST, TFT_SPI_MODE));
+        spi->beginTransaction(SPISettings(SPI_READ_FREQUENCY, MSBFIRST, TFT_SPI_MODE));
         CS_L;
     }
 #else
@@ -328,7 +328,7 @@ inline void TFT_eSPI::end_tft_read(void) {
         if (!locked) {
             locked = true;
             CS_H;
-            spi.endTransaction();
+            spi->endTransaction();
         }
     }
 #else
@@ -513,12 +513,13 @@ void TFT_eSPI::begin(uint8_t tc) {
 ** Function name:           init (tc is tab colour for ST7735 displays only)
 ** Description:             Reset, then initialise the TFT display registers
 ***************************************************************************************/
-void TFT_eSPI::init(uint8_t tc) {
+void TFT_eSPI::init(uint8_t tc, SPIClass *_spi) {
+    spi = _spi;
     if (_booted) {
 #if defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040)
 #if !defined(TFT_PARALLEL_8_BIT)
         Serial.println("BEGIN SPI CLK=" + String(TFT_SCLK) + "; MISO=" + String(TFT_MISO) + "; MOSI=" + String(TFT_MOSI));
-        spi.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1);
+        spi->begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1);
 #endif
 #endif
         lockTransaction = false;
@@ -4056,7 +4057,7 @@ void TFT_eSPI::setTextFont(uint8_t f)
 ***************************************************************************************/
 #if !defined (TFT_PARALLEL_8_BIT)
 
-SPIClass &TFT_eSPI::getSPIinstance(void) {
+SPIClass *TFT_eSPI::getSPIinstance(void) {
     return spi;
 }
 

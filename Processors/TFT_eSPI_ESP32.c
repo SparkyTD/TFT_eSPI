@@ -12,7 +12,7 @@
 #if !defined (TFT_PARALLEL_8_BIT)
     //SPIClass& spi = SPI;
     //SPIClass spi = SPIClass(VSPI);
-    SPIClass spi = SPIClass(TFT_SPI_PORT); // FSPI works with 35, 36, 37
+    SPIClass *spi = new SPIClass(FSPI); // FSPI works with 35, 36, 37
 #endif
 
 #ifdef ESP32_DMA
