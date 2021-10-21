@@ -90,6 +90,9 @@ typedef struct { // Data stored for FONT AS A WHOLE:
   #include <Fonts/GFXFF/FreeSerifBoldItalic18pt7b.h> // FF47 or FSBI18
   #include <Fonts/GFXFF/FreeSerifBoldItalic24pt7b.h> // FF48 or FSBI24
 
+  // Custom Font
+  #include <Fonts/GFXFF/CustomGlyphs.h>
+
 #endif // LOAD_GFXFF
 
 #endif // _GFXFONT_H_

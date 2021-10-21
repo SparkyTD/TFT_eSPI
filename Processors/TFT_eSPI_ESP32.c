@@ -6,14 +6,13 @@
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////////////
 
+#include <SPI.h>
+
 // Select the SPI port to use, ESP32 has 2 options
 #if !defined (TFT_PARALLEL_8_BIT)
-  #ifdef USE_HSPI_PORT
-    SPIClass spi = SPIClass(HSPI);
-  #else // use default VSPI port
     //SPIClass& spi = SPI;
-    SPIClass spi = SPIClass(VSPI);
-  #endif
+    //SPIClass spi = SPIClass(VSPI);
+    SPIClass spi = SPIClass(TFT_SPI_PORT); // FSPI works with 35, 36, 37
 #endif
 
 #ifdef ESP32_DMA
@@ -279,7 +278,6 @@ void TFT_eSPI::pushBlock(uint16_t color, uint32_t len){
 ** Description:             Write a sequence of pixels with swapped bytes
 ***************************************************************************************/
 void TFT_eSPI::pushSwapBytePixels(const void* data_in, uint32_t len){
-
   uint8_t* data = (uint8_t*)data_in;
   uint32_t color[16];
 

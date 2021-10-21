@@ -1,10 +1,10 @@
 // Change the width and height if required (defined in portrait mode)
 // or use the constructor to over-ride defaults
 #ifndef TFT_WIDTH
-  #define TFT_WIDTH  128
+#define TFT_WIDTH  128
 #endif
 #ifndef TFT_HEIGHT
-  #define TFT_HEIGHT 160
+#define TFT_HEIGHT 160
 #endif
 
 
@@ -17,29 +17,34 @@
 #define INITR_GREENTAB128    0x5 // Use if you only get part of 128x128 screen in rotation 0 & 1
 #define INITR_GREENTAB160x80 0x6 // Use if you only get part of 128x128 screen in rotation 0 & 1
 #define INITR_REDTAB160x80   0x7 // Added for https://www.aliexpress.com/item/ShengYang-1pcs-IPS-0-96-inch-7P-SPI-HD-65K-Full-Color-OLED-Module-ST7735-Drive/32918394604.html
+#define INITR_GREENTAB4	     0x8 // Custom
 #define INITB                0xB
 
 
 // Setup the tab color that will be used by the library setRotation() and setup command list
 #if defined (ST7735_INITB)
-  #define TAB_COLOUR INITB
-  
+#define TAB_COLOUR INITB
+
 #elif defined (ST7735_GREENTAB)
-  #define TAB_COLOUR INITR_GREENTAB
+#define TAB_COLOUR INITR_GREENTAB
   #define CGRAM_OFFSET
-  
+
 #elif defined (ST7735_GREENTAB2)
-  #define TAB_COLOUR INITR_GREENTAB2
+#define TAB_COLOUR INITR_GREENTAB2
   #define CGRAM_OFFSET
 
 #elif defined (ST7735_GREENTAB3)
-  #define TAB_COLOUR INITR_GREENTAB3
+#define TAB_COLOUR INITR_GREENTAB3
   #define CGRAM_OFFSET
 
+#elif defined (ST7735_GREENTAB4)
+#define TAB_COLOUR INITR_GREENTAB4
+#define CGRAM_OFFSET
+
 #elif defined (ST7735_GREENTAB128)
-  #define TAB_COLOUR INITR_GREENTAB128
+#define TAB_COLOUR INITR_GREENTAB128
   #define CGRAM_OFFSET
- 
+
 #elif defined (ST7735_GREENTAB160x80)
   #define TAB_COLOUR INITR_GREENTAB160x80
   #define CGRAM_OFFSET
@@ -47,10 +52,10 @@
 #elif defined (ST7735_REDTAB160x80)
   #define TAB_COLOUR INITR_REDTAB160x80
   #define CGRAM_OFFSET
- 
+
 #elif defined (ST7735_REDTAB)
   #define TAB_COLOUR INITR_REDTAB
-  
+
 #elif defined (ST7735_BLACKTAB)
   #define TAB_COLOUR INITR_BLACKTAB
 
@@ -107,13 +112,13 @@
 #define TFT_MAD_RGB 0x00
 
 #ifndef TFT_RGB_ORDER
-  #if defined(INITR_BLACKTAB) || defined(INITR_GREENTAB2) || defined(INITB)
-    #define TFT_MAD_COLOR_ORDER TFT_MAD_RGB
-  #else
-    #define TFT_MAD_COLOR_ORDER TFT_MAD_BGR
-  #endif
+#if defined(INITR_BLACKTAB) || defined(INITR_GREENTAB2) || defined(INITB)
+#define TFT_MAD_COLOR_ORDER TFT_MAD_RGB
 #else
-  #if (TFT_RGB_ORDER == 1)
+#define TFT_MAD_COLOR_ORDER TFT_MAD_BGR
+#endif
+#else
+#if (TFT_RGB_ORDER == 1)
     #define TFT_MAD_COLOR_ORDER TFT_MAD_RGB
   #else
     #define TFT_MAD_COLOR_ORDER TFT_MAD_BGR
@@ -136,6 +141,7 @@
 
 #define ST7735_INVOFF  0x20
 #define ST7735_INVON   0x21
+#define ST7735_GAMSET   0x26
 #define ST7735_DISPOFF 0x28
 #define ST7735_DISPON  0x29
 #define ST7735_CASET   0x2A
@@ -159,13 +165,33 @@
 #define ST7735_PWCTR4  0xC3
 #define ST7735_PWCTR5  0xC4
 #define ST7735_VMCTR1  0xC5
+#define ST7735_VMOFCTR  0xC7
 
 #define ST7735_RDID1   0xDA
 #define ST7735_RDID2   0xDB
 #define ST7735_RDID3   0xDC
-#define ST7735_RDID4   0xDD
 
 #define ST7735_PWCTR6  0xFC
 
 #define ST7735_GMCTRP1 0xE0
 #define ST7735_GMCTRN1 0xE1
+
+
+#define ST7735_DRVCTR 0xc7
+#define ST7735_NCOLFRQ 0xEC
+#define ST7735_GAMMAEN 0xf2
+#define ST7735_DISSET6 0xb7
+
+
+
+
+#define ST7735_COLMOD_12BPP 0x03
+#define ST7735_COLMOD_18BPP 0x05
+#define ST7735_COLMOD_16BPP 0x06
+
+#define ST7735_MADCTL_MY  (1 << 7)
+#define ST7735_MADCTL_MX  (1 << 6)
+#define ST7735_MADCTL_MV  (1 << 5)
+#define ST7735_MADCTL_ML  (1 << 4)
+#define ST7735_MADCTL_RGB (1 << 3)
+#define ST7735_MADCTL_MH  (1 << 2)
