@@ -290,6 +290,8 @@ const PROGMEM fontinfo fontdata[] = {
 
 #define RFR_RANDOM_COLOR TFT_RGB_COLOR(random(255), random(255), random(255))
 
+typedef uint16_t COLOR;
+
 // Next is a special 16 bit colour value that encodes to 8 bits
 // and will then decode back to the same 16 bit value.
 // Convenient for 8 bit and 16 bit transparent sprites.
