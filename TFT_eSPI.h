@@ -18,11 +18,6 @@
 
 #define TFT_ESPI_VERSION "2.3.70"
 
-#ifdef ESP32_S2
-#define VSPI HSPI
-#define VSPI_HOST SPI_HOST
-#endif
-
 // Bit level feature flags
 // Bit 0 set: viewport capability
 #define TFT_ESPI_FEATURES 1
@@ -72,6 +67,14 @@
 
 #include "Processors/TFT_eSPI_ESP32.h"
 
+#elif defined (ESP8266)
+#include "Processors/TFT_eSPI_ESP8266.h"
+#elif defined (STM32)
+#include "Processors/TFT_eSPI_STM32.h"
+#elif defined(ARDUINO_ARCH_RP2040)
+#include "Processors/TFT_eSPI_RP2040.h"
+#else
+#include "Processors/TFT_eSPI_Generic.h"
 #endif
 
 /***************************************************************************************
@@ -291,10 +294,6 @@ const PROGMEM fontinfo fontdata[] = {
 #define TFT_SKYBLUE     TFT_RGB_COLOR(135, 206, 235)
 #define TFT_VIOLET      TFT_RGB_COLOR(180,  46, 226)
 
-#define RFR_RANDOM_COLOR TFT_RGB_COLOR(random(255), random(255), random(255))
-
-typedef uint16_t COLOR;
-
 // Next is a special 16 bit colour value that encodes to 8 bits
 // and will then decode back to the same 16 bit value.
 // Convenient for 8 bit and 16 bit transparent sprites.
@@ -407,11 +406,11 @@ class TFT_eSPI : public Print {
     //--------------------------------------- public ------------------------------------//
 public:
 
-    TFT_eSPI(SPIClass *_spi = nullptr, uint8_t _cs = -1, uint8_t _dc = -1, uint8_t _reset = -1);
+    TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
 
     // init() and begin() are equivalent, begin() included for backwards compatibility
     // Sketch defined tab colour option is for ST7735 displays only
-    void init();
+    void init(SPIClass *_spi = nullptr, uint8_t tc = TAB_COLOUR);
 
     // These are virtual so the TFT_eSprite class can override them with sprite specific functions
     virtual void drawPixel(int32_t x, int32_t y, uint32_t color),
@@ -466,6 +465,9 @@ public:
 
     // Write a set of pixels stored in memory, use setSwapBytes(true/false) function to correct endianess
     void pushPixels(const void *data_in, uint32_t len);
+
+    // Read the colour of a pixel at x,y and return value in 565 format
+    uint16_t readPixel(int32_t x, int32_t y);
 
     // Support for half duplex (bi-directional SDA) SPI bus where MOSI must be switched to input
 #ifdef TFT_SDA_READ
@@ -613,6 +615,10 @@ public:
 
     void commandList(const uint8_t *addr); // Send a initialisation sequence to TFT stored in FLASH
 
+    uint8_t readcommand8(uint8_t cmd_function, uint8_t index = 0); // read 8 bits from TFT
+    uint16_t readcommand16(uint8_t cmd_function, uint8_t index = 0); // read 16 bits from TFT
+    uint32_t readcommand32(uint8_t cmd_function, uint8_t index = 0); // read 32 bits from TFT
+
 
     // Colour conversion
     // Convert 8 bit red, green and blue to 16 bits
@@ -706,6 +712,12 @@ public:
 
     void setAttribute(uint8_t id = 0, uint8_t a = 0); // Set attribute value
     uint8_t getAttribute(uint8_t id = 0);                // Get attribute value
+
+    // Used for diagnostic sketch to see library setup adopted by compiler, see Section 7 above
+    void getSetup(setup_t &tft_settings); // Sketch provides the instance to populate
+
+    // Global variables
+    static SPIClass &getSPIinstance(void); // Get SPI class handle
 
     uint32_t textcolor, textbgcolor;         // Text foreground and background colours
 
@@ -822,7 +834,7 @@ protected:
     uint32_t _lastColor; // Buffered value of last colour used
 
 #ifdef LOAD_GFXFF
-    GFXfont *gfxFont = nullptr;
+    GFXfont *gfxFont;
 #endif
 
 /***************************************************************************************
